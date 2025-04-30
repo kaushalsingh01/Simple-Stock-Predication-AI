@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Stock Price Predictor</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Stock Price Predictor</h1>
+        <form action="/predict" method="post">
+            <div class="form-group">
+                <label for="stock">Select Stock:</label>
+                <select id="stock" name="stock" required>
+                    {% for stock in stocks %}
+                    <option value="{{ stock }}">{{ stock }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="current_price">Current Price ($):</label>
+                <input type="number" step="0.01" id="current_price" name="current_price" required>
+            </div>
+
+            <div class="form-group">
+                <label for="ma10">10-Day Moving Average ($):</label>
+                <input type="number" step="0.01" id="ma10" name="ma10" required>
+            </div>
+
+            <div class="form-group">
+                <label for="ma50">50-Day Moving Average ($):</label>
+                <input type="number" step="0.01" id="ma50" name="ma50" required>
+            </div>
+
+            <button type="submit">Predict Next Day Price</button>
+        </form>
+    </div>
+</body>
+
+</html>
