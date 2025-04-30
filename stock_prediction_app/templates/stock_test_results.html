@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Results for {{ stats.stock_name }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-gray: #f8f9fa;
+            --dark-gray: #343a40;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: var(--dark-gray);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .stats-card {
+            background: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+        }
+
+        .stats-card:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: var(--light-gray);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-item strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--dark-gray);
+        }
+
+        .stat-item span {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .good {
+            color: var(--success-color);
+        }
+
+        .medium {
+            color: var(--warning-color);
+        }
+
+        .poor {
+            color: var(--danger-color);
+        }
+
+        .results-container {
+            background: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        .results-table th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .results-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .results-table tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        .results-table tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .back-button {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 25px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            margin-top: 20px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-period {
+            color: var(--dark-gray);
+            font-size: 1.1rem;
+            margin: 15px 0;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: var(--border-radius);
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .results-table {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Test Results for {{ stats.stock_name }} ({{ stats.ticker }})</h1>
+
+        <div class="test-period">
+            Test Period: {{ stats.start_date }} to {{ stats.end_date }}
+        </div>
+
+        <div class="stats-card">
+            <h2>Performance Summary</h2>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <strong>Test Days</strong>
+                    <span>{{ stats.test_days }}</span>
+                </div>
+                <div class="stat-item">
+                    <strong>Average Error</strong>
+                    <span>${{ stats.avg_error }}</span>
+                </div>
+                <div class="stat-item">
+                    <strong>Price Accuracy</strong>
+                    <span class="{% if stats.accuracy > 95 %}good
+                                {% elif stats.accuracy > 85 %}medium
+                                {% else %}poor{% endif %}">
+                        {{ stats.accuracy }}%
+                    </span>
+                </div>
+                <div class="stat-item">
+                    <strong>Direction Accuracy</strong>
+                    <span class="{% if stats.direction_accuracy > 60 %}good
+                                {% elif stats.direction_accuracy > 50 %}medium
+                                {% else %}poor{% endif %}">
+                        {{ stats.direction_accuracy }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-container">
+            <h2>Detailed Predictions</h2>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Predicted Price</th>
+                        <th>Actual Price</th>
+                        <th>Error ($)</th>
+                        <th>Error (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in results %}
+                    <tr>
+                        <td>{{ r.date }}</td>
+                        <td>${{ r.predicted }}</td>
+                        <td>${{ r.actual }}</td>
+                        <td>${{ r.error }}</td>
+                        <td>{{ r.percent_error }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <a href="/select_stock" class="back-button">Test Another Stock</a>
+    </div>
+</body>
+
+</html>
