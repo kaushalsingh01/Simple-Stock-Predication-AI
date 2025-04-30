@@ -5,13 +5,13 @@ A simple AI-powered stock price predictor using machine learning. This project l
 ## 🚀 Features  
 - Fetches real-time and historical stock data  
 - Cleans and preprocesses datasets for analysis  
-- Implements machine learning models like Linear Regression, Random Forest, and LSTM  
+- Implements machine learning models like Linear Regression and LSTM  
 - Provides stock price predictions based on past trends  
 - Visualizes performance metrics to evaluate accuracy  
 
 ## 🛠 Tech Stack  
 - **Python** (pandas, numpy, scikit-learn, TensorFlow)  
-- **APIs** (Yahoo Finance, Alpha Vantage)  
+- **APIs** (Yahoo Finance)  
 - **Machine Learning** (Regression, Time-Series Models)  
 - **Data Visualization** (matplotlib, seaborn)  
 
