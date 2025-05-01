@@ -5,10 +5,13 @@ import numpy as np
 from datetime import datetime, timedelta
 import yfinance as yf
 import os
-
+import plotly.graph_objs as go
+import plotly.offline as pyo
+import plotly.utils as plotly_utils
+import json
+import pytz
 app = Flask(__name__)
 
-# Configure the models directory
 # Configure the models directory
 MODELS_DIR = "models"
 os.makedirs(MODELS_DIR, exist_ok=True)
@@ -42,6 +45,34 @@ for stock_name, data in STOCK_DATA.items():
             print(f"❌ Model file not found: {model_path}")
     except Exception as e:
         print(f"❌ Error loading model for {stock_name}: {str(e)}")
+
+def get_current_stock_data(ticker):
+    """Fetch current stock data including moving averages"""
+    try:
+        # Get data for last 60 days to calculate moving averages
+        data = yf.download(ticker, period="60d")
+        
+        if data.empty or 'Close' not in data.columns:
+            print("⚠️ No valid data returned from Yahoo Finance!")
+            return None
+            
+        # Calculate indicators
+        data['MA_10'] = data['Close'].rolling(10).mean()
+        data['MA_50'] = data['Close'].rolling(50).mean()
+        
+        # Get the latest data point
+        latest = data.iloc[-1]
+        
+        return {
+            'current_price': round(float(latest['Close']), 2),
+            'ma10': round(float(latest['MA_10']), 2),
+            'ma50': round(float(latest['MA_50']), 2),
+            'last_updated': data.index[-1].strftime('%Y-%m-%d')
+        }
+        
+    except Exception as e:
+        print(f"❌ Error fetching stock data: {str(e)}")
+        return None
 
 def generate_historical_test_cases(ticker, start_date, end_date):
     """Generate test cases from real historical data"""
@@ -103,11 +134,238 @@ def calculate_direction_accuracy(results):
     
     return round(correct / (len(results)-1) * 100, 2)
 
+def get_prediction_date():
+    """Get the next trading day (skips weekends) with proper timezone handling"""
+    # Get current time in market timezone (NYSE in this case)
+    ny_tz = pytz.timezone('America/New_York')
+    now = datetime.now(ny_tz)
+    
+    # Calculate next day
+    next_day = now + timedelta(days=1)
+    
+    # Adjust for weekends
+    if next_day.weekday() >= 5:  # Saturday (5) or Sunday (6)
+        next_day += timedelta(days=(7 - next_day.weekday()))
+    
+    # Format as YYYY-MM-DD
+    return next_day.strftime('%Y-%m-%d')
+
+def create_price_graph(stock_name, ticker, current_price, predicted_price):
+    """Create a focused prediction graph between current and predicted prices"""
+    # Get minimal historical data (just 5 days for context)
+    data = yf.download(ticker, period="5d")
+    
+    if data.empty:
+        return None
+    
+    # Create figure
+    fig = go.Figure()
+    
+    # 1. Thin line for recent historical context
+    fig.add_trace(go.Scatter(
+        x=data.index,
+        y=data['Close'],
+        mode='lines',
+        name='Recent Prices',
+        line=dict(color='#888', width=1),
+        hovertemplate='%{y:.2f}<extra></extra>'
+    ))
+    
+    # Calculate prediction date
+    next_day = data.index[-1] + pd.Timedelta(days=1)
+    if next_day.weekday() >= 5:  # Handle weekends
+        next_day += pd.Timedelta(days=(7 - next_day.weekday()))
+    
+    # 2. Current price marker
+    fig.add_trace(go.Scatter(
+        x=[data.index[-1]],
+        y=[current_price],
+        mode='markers+text',
+        name='Current Price',
+        marker=dict(color='#0F9D58', size=14),
+        text=['NOW'],
+        textposition="top center",
+        hovertemplate='Current: %{y:.2f}<extra></extra>',
+        textfont=dict(size=12, color='#0F9D58')
+    ))
+    
+    # 3. Prediction bridge (shaded area between current and predicted)
+    fig.add_trace(go.Scatter(
+        x=[data.index[-1], next_day],
+        y=[current_price, predicted_price],
+        fill='tozeroy',
+        mode='none',
+        name='Prediction Range',
+        fillcolor='rgba(234, 67, 53, 0.2)',
+        showlegend=False
+    ))
+    
+    # 4. Prediction line
+    fig.add_trace(go.Scatter(
+        x=[data.index[-1], next_day],
+        y=[current_price, predicted_price],
+        mode='lines',
+        line=dict(color='#DB4437', width=3),
+        name='Predicted Change',
+        hovertemplate='%{y:.2f}<extra></extra>'
+    ))
+    
+    # 5. Predicted price marker
+    fig.add_trace(go.Scatter(
+        x=[next_day],
+        y=[predicted_price],
+        mode='markers+text',
+        name='Predicted Price',
+        marker=dict(color='#DB4437', size=14),
+        text=['TOMORROW'],
+        textposition="top center",
+        hovertemplate='Predicted: %{y:.2f}<extra></extra>',
+        textfont=dict(size=12, color='#DB4437')
+    ))
+    
+    # Calculate price change
+    change = predicted_price - current_price
+    pct_change = (change / current_price) * 100
+    
+    # Layout configuration
+    fig.update_layout(
+        title={
+            'text': f"{stock_name} ({ticker}) Price Prediction",
+            'y':0.95,
+            'x':0.5,
+            'xanchor': 'center',
+            'font': dict(size=18)
+        },
+        xaxis=dict(
+            title="Timeline",
+            showgrid=False,
+            range=[data.index[-1] - pd.Timedelta(hours=12), 
+                     next_day + pd.Timedelta(hours=12)]
+        ),
+        yaxis=dict(
+            title="Price ($)",
+            range=[min(current_price, predicted_price)*0.995, 
+                   max(current_price, predicted_price)*1.005],
+            tickprefix="$"
+        ),
+        template="plotly_white",
+        hovermode="x unified",
+        showlegend=False,
+        margin=dict(l=50, r=50, b=80, t=100),
+        annotations=[
+            dict(
+                x=next_day,
+                y=predicted_price,
+                text=f"<b>{'↑' if change >=0 else '↓'} ${predicted_price:.2f}</b><br>{'+' if change >=0 else ''}{change:.2f} ({'+' if pct_change >=0 else ''}{pct_change:.2f}%)",
+                showarrow=True,
+                arrowhead=3,
+                ax=0,
+                ay=-40,
+                font=dict(size=12, color='#DB4437'),
+                bordercolor="#DB4437",
+                borderwidth=1,
+                borderpad=4,
+                bgcolor="white"
+            )
+        ]
+    )
+    
+    # Custom styling
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
+    
+    return json.dumps(fig, cls=plotly_utils.PlotlyJSONEncoder)
+
 @app.route('/')
 def index():
     # Only show stocks with loaded models
     available_stocks = [name for name in STOCK_DATA if name in stock_models]
     return render_template('index.html', stocks=available_stocks)
+
+@app.route('/predict_form')
+def predict_form():
+    """Simplified prediction form with automatic data fetching"""
+    return render_template('predict_form.html', available_stocks=available_stocks)
+
+
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    """Handle prediction with automatic data fetching and proper date handling"""
+    try:
+        stock_name = request.form['stock_name']
+        quantity = int(request.form.get('quantity', 1))
+        
+        if stock_name not in stock_models:
+            return render_template('error.html',
+                                message=f"No model loaded for {stock_name}"), 404
+        
+        ticker = STOCK_DATA[stock_name]['ticker']
+        
+        # Fetch current stock data with timezone awareness
+        stock_data = get_current_stock_data(ticker)
+        if not stock_data:
+            return render_template('error.html',
+                                message=f"Could not fetch current data for {stock_name}"), 400
+
+        # Prepare input features
+        features = np.array([[stock_data['current_price'], stock_data['ma10'], stock_data['ma50']]])
+        
+        # Make prediction
+        predicted_price = stock_models[stock_name].predict(features)[0]
+        predicted_change = predicted_price - stock_data['current_price']
+        predicted_pct_change = (predicted_change / stock_data['current_price']) * 100
+        
+        # Calculate position value
+        current_value = stock_data['current_price'] * quantity
+        predicted_value = predicted_price * quantity
+        value_change = predicted_value - current_value
+        
+        # Get proper prediction date (next business day in market timezone)
+        ny_tz = pytz.timezone('America/New_York')
+        today = datetime.now(ny_tz)
+        next_day = today + timedelta(days=1)
+        
+        # Adjust for weekends
+        if next_day.weekday() >= 5:  # Saturday (5) or Sunday (6)
+            next_day += timedelta(days=(7 - next_day.weekday()))
+        
+        prediction_date = next_day.strftime('%Y-%m-%d')
+        
+        # Debug output
+        print(f"Prediction Date Calculation: Today={today.strftime('%Y-%m-%d')}, Next Day={prediction_date}")
+        
+        # Create price graph
+        graph_json = create_price_graph(stock_name, ticker, 
+                                     stock_data['current_price'], predicted_price)
+        
+        return render_template('prediction_results.html',
+                            stock_name=stock_name,
+                            ticker=ticker,
+                            current_price=round(stock_data['current_price'], 2),
+                            ma10=round(stock_data['ma10'], 2),
+                            ma50=round(stock_data['ma50'], 2),
+                            last_updated=stock_data['last_updated'],
+                            predicted_price=round(predicted_price, 2),
+                            predicted_change=round(predicted_change, 2),
+                            predicted_pct_change=round(predicted_pct_change, 2),
+                            prediction_date=prediction_date,
+                            quantity=quantity,
+                            current_value=round(current_value, 2),
+                            predicted_value=round(predicted_value, 2),
+                            value_change=round(value_change, 2),
+                            graph_json=graph_json)
+        
+    except KeyError as e:
+        return render_template('error.html',
+                            message=f"Invalid stock selection: {str(e)}"), 400
+    except ValueError as e:
+        return render_template('error.html',
+                            message=f"Invalid input value: {str(e)}"), 400
+    except Exception as e:
+        app.logger.error(f"Prediction failed: {str(e)}", exc_info=True)
+        return render_template('error.html',
+                            message="An unexpected error occurred. Please try again later."), 500
 
 @app.route('/select_stock')
 def select_stock():
@@ -163,12 +421,11 @@ def test_selected_stock():
     results = []
     for case in test_cases:
         try:
-            # PROPER 2D ARRAY FORMAT - THIS IS THE CRITICAL FIX
             features = np.array([
-                [case['current_price']],  # First feature
-                [case['ma10']],          # Second feature
-                [case['ma50'] ]          # Third feature
-            ]).reshape(1, -1)  # Reshape to (1, 3)
+                [case['current_price']],
+                [case['ma10']],
+                [case['ma50']]
+            ]).reshape(1, -1)
             
             predicted = stock_models[stock_name].predict(features)[0]
             
@@ -203,33 +460,6 @@ def test_selected_stock():
     return render_template('stock_test_results.html',
                         stats=stats,
                         results=results[:100])  # Show first 100 results
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    # Get user input
-    stock_name = request.form['stock']
-    current_price = float(request.form['current_price'])
-    ma10 = float(request.form['ma10'])
-    ma50 = float(request.form['ma50'])
-    
-    # Prepare input features
-    features = np.array([[current_price, ma10, ma50]])
-    
-    # Make prediction
-    model = stock_models[stock_name]
-    prediction = model.predict(features)[0]
-    
-    # Generate prediction date (next business day)
-    today = datetime.now()
-    next_day = today + timedelta(days=1)
-    if next_day.weekday() >= 5:  # If Saturday or Sunday
-        next_day += timedelta(days=(7 - next_day.weekday()))
-    
-    return render_template('results.html',
-                         stock=stock_name,
-                         current_price=current_price,
-                         prediction=round(prediction, 2),
-                         prediction_date=next_day.strftime('%Y-%m-%d'))
 
 if __name__ == '__main__':
     # Verify models loaded
