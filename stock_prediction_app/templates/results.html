@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Prediction Results</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Prediction Results for {{ stock }}</h1>
+
+        <div class="result-card">
+            <div class="result-item">
+                <span class="label">Current Price:</span>
+                <span class="value">${{ current_price }}</span>
+            </div>
+
+            <div class="result-item">
+                <span class="label">Predicted Price for {{ prediction_date }}:</span>
+                <span class="value">${{ prediction }}</span>
+            </div>
+
+            <div class="price-change">
+                {% set change = prediction - current_price %}
+                {% set percent_change = (change / current_price) * 100 %}
+
+                <span class="label">Change:</span>
+                <span class="value {% if change >= 0 %}positive{% else %}negative{% endif %}">
+                    {{ "+" if change >= 0 else "" }}{{ "%.2f"|format(change) }} ({{ "%.2f"|format(percent_change) }}%)
+                </span>
+            </div>
+        </div>
+
+        <a href="/" class="back-button">Make Another Prediction</a>
+    </div>
+</body>
+
+</html>

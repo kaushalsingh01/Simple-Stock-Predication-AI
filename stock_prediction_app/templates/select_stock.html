@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Select Stock to Test</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .stock-form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        select,
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Select Stock and Date Range</h1>
+
+        <form class="stock-form" action="/test_selected_stock" method="post">
+            <div class="form-group">
+                <label for="stock_name">Select Stock:</label>
+                <select id="stock_name" name="stock_name" required>
+                    {% for name, ticker in available_stocks %}
+                    <option value="{{ name }}">{{ name }} ({{ ticker }})</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="ticker" id="ticker" value="{{ available_stocks[0][1] }}">
+            </div>
+
+            <div class="form-group">
+                <label for="start_date">Start Date:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ default_start }}" min="2010-01-01"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ default_end }}" max="{{ today }}" required>
+            </div>
+
+            <button type="submit">Run Accuracy Test</button>
+        </form>
+    </div>
+
+    <script>
+        // Update hidden ticker field when selection changes
+        document.getElementById('stock_name').addEventListener('change', function () {
+            const selectedOption = this.options[this.selectedIndex];
+            const ticker = selectedOption.textContent.match(/\(([^)]+)\)/)[1];
+            document.getElementById('ticker').value = ticker;
+        });
+    </script>
+</body>
+
+</html>

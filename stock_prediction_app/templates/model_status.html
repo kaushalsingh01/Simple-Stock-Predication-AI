@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Model Status</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .good {
+            color: green;
+        }
+
+        .bad {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Model Loading Status</h1>
+    <table>
+        <tr>
+            <th>Stock</th>
+            <th>Model File</th>
+            <th>Exists</th>
+            <th>Loaded</th>
+        </tr>
+        {% for name, status in models.items() %}
+        <tr>
+            <td>{{ name }}</td>
+            <td>{{ status.file }}</td>
+            <td class="{% if status.exists %}good{% else %}bad{% endif %}">
+                {{ status.exists }}
+            </td>
+            <td class="{% if status.loaded %}good{% else %}bad{% endif %}">
+                {{ status.loaded }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/select_stock">Back to Stock Selection</a>
+</body>
+
+</html>
