@@ -64,11 +64,11 @@ def get_current_stock_data(ticker):
         latest = data.iloc[-1]
         
         return {
-            'current_price': round(float(latest['Close']), 2),
-            'ma10': round(float(latest['MA_10']), 2),
-            'ma50': round(float(latest['MA_50']), 2),
-            'last_updated': data.index[-1].strftime('%Y-%m-%d')
-        }
+        'current_price': float(data['Close'].iloc[-1]),  
+        'ma10': float(data['MA_10'].iloc[-1]),          
+        'ma50': float(data['MA_50'].iloc[-1]),          
+        'last_updated': data.index[-1].strftime('%Y-%m-%d')
+    }
         
     except Exception as e:
         print(f"❌ Error fetching stock data: {str(e)}")
@@ -291,81 +291,71 @@ def predict_form():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Handle prediction with automatic data fetching and proper date handling"""
+    """Handle prediction with automatic data fetching"""
+    stock_name = request.form['stock_name']
+    quantity = int(request.form.get('quantity', 1))
+    
+    if stock_name not in stock_models:
+        return render_template('error.html',
+                            message=f"No model loaded for {stock_name}"), 404
+    
+    ticker = STOCK_DATA[stock_name]['ticker']
+    
+    # Fetch current stock data
+    stock_data = get_current_stock_data(ticker)
+    if not stock_data:
+        return render_template('error.html',
+                            message=f"Could not fetch current data for {stock_name}"), 400
+    
+    # Prepare input features as numpy array (without feature names)
+    features = np.array([
+        [float(stock_data['current_price']),
+         float(stock_data['ma10']),
+         float(stock_data['ma50'])]
+    ])
+    
+    # Make prediction
     try:
-        stock_name = request.form['stock_name']
-        quantity = int(request.form.get('quantity', 1))
-        
-        if stock_name not in stock_models:
-            return render_template('error.html',
-                                message=f"No model loaded for {stock_name}"), 404
-        
-        ticker = STOCK_DATA[stock_name]['ticker']
-        
-        # Fetch current stock data with timezone awareness
-        stock_data = get_current_stock_data(ticker)
-        if not stock_data:
-            return render_template('error.html',
-                                message=f"Could not fetch current data for {stock_name}"), 400
-
-        # Prepare input features
-        features = np.array([[stock_data['current_price'], stock_data['ma10'], stock_data['ma50']]])
-        
-        # Make prediction
         predicted_price = stock_models[stock_name].predict(features)[0]
-        predicted_change = predicted_price - stock_data['current_price']
-        predicted_pct_change = (predicted_change / stock_data['current_price']) * 100
+        predicted_change = predicted_price - float(stock_data['current_price'])
+        predicted_pct_change = (predicted_change / float(stock_data['current_price'])) * 100
         
         # Calculate position value
-        current_value = stock_data['current_price'] * quantity
+        current_value = float(stock_data['current_price']) * quantity
         predicted_value = predicted_price * quantity
         value_change = predicted_value - current_value
         
-        # Get proper prediction date (next business day in market timezone)
-        ny_tz = pytz.timezone('America/New_York')
-        today = datetime.now(ny_tz)
+        # Generate prediction date (next business day)
+        today = datetime.now()
         next_day = today + timedelta(days=1)
-        
-        # Adjust for weekends
-        if next_day.weekday() >= 5:  # Saturday (5) or Sunday (6)
+        if next_day.weekday() >= 5:  # If Saturday or Sunday
             next_day += timedelta(days=(7 - next_day.weekday()))
-        
-        prediction_date = next_day.strftime('%Y-%m-%d')
-        
-        # Debug output
-        print(f"Prediction Date Calculation: Today={today.strftime('%Y-%m-%d')}, Next Day={prediction_date}")
         
         # Create price graph
         graph_json = create_price_graph(stock_name, ticker, 
-                                     stock_data['current_price'], predicted_price)
+                                      float(stock_data['current_price']), 
+                                      predicted_price)
         
         return render_template('prediction_results.html',
                             stock_name=stock_name,
                             ticker=ticker,
-                            current_price=round(stock_data['current_price'], 2),
-                            ma10=round(stock_data['ma10'], 2),
-                            ma50=round(stock_data['ma50'], 2),
+                            current_price=round(float(stock_data['current_price']), 2),
+                            ma10=round(float(stock_data['ma10']), 2),
+                            ma50=round(float(stock_data['ma50']), 2),
                             last_updated=stock_data['last_updated'],
                             predicted_price=round(predicted_price, 2),
                             predicted_change=round(predicted_change, 2),
                             predicted_pct_change=round(predicted_pct_change, 2),
-                            prediction_date=prediction_date,
+                            prediction_date=next_day.strftime('%Y-%m-%d'),
                             quantity=quantity,
                             current_value=round(current_value, 2),
                             predicted_value=round(predicted_value, 2),
                             value_change=round(value_change, 2),
                             graph_json=graph_json)
         
-    except KeyError as e:
-        return render_template('error.html',
-                            message=f"Invalid stock selection: {str(e)}"), 400
-    except ValueError as e:
-        return render_template('error.html',
-                            message=f"Invalid input value: {str(e)}"), 400
     except Exception as e:
-        app.logger.error(f"Prediction failed: {str(e)}", exc_info=True)
         return render_template('error.html',
-                            message="An unexpected error occurred. Please try again later."), 500
+                            message=f"Prediction failed: {str(e)}"), 500
 
 @app.route('/select_stock')
 def select_stock():
