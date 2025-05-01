@@ -103,11 +103,17 @@ def calculate_direction_accuracy(results):
     
     return round(correct / (len(results)-1) * 100, 2)
 
+@app.route('/predict_data')
+def predict_data():
+    # Only show stocks with loaded models
+    available_stocks = [name for name in STOCK_DATA if name in stock_models]
+    return render_template('index.html', stocks=available_stocks)
+
 @app.route('/')
 def index():
     # Only show stocks with loaded models
     available_stocks = [name for name in STOCK_DATA if name in stock_models]
-    return render_template('index.html', stocks=available_stocks)
+    return render_template('landing_page.html')
 
 @app.route('/select_stock')
 def select_stock():
