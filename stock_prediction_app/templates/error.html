@@ -1,19 +1,112 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Error</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>404 Not Found</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(to top left, #1d3557, #457b9d);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 40px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: 800px;
+      width: 90%;
+      text-align: center;
+      animation: fadeIn 1.2s ease;
+    }
+
+    .glass-card h1 {
+      font-size: 6rem;
+      color: #fca311;
+    }
+
+    .glass-card p {
+      font-size: 1.3rem;
+      margin: 10px 0 30px;
+    }
+
+    .glass-card .actions a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 24px;
+      background-color: #fca311;
+      color: #1d3557;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: background-color 0.3s ease;
+    }
+
+    .glass-card .actions a:hover {
+      background-color: #ffb347;
+    }
+
+    .illustrations {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .illustrations img {
+      width: 180px;
+      height: auto;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      .glass-card h1 {
+        font-size: 4rem;
+      }
+      .illustrations img {
+        width: 120px;
+      }
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>Error Running Test</h1>
-        <div class="alert alert-danger">
-            {{ message }}
-        </div>
-        <a href="/select_stock" class="button">Try Again</a>
+  <div class="glass-card">
+    <h1>404</h1>
+    <p>Oops! The time interval you have chosen is wrong.</p>
+    <div class="actions">
+      <a href="/">🏠 Back to Home</a>
     </div>
+    <div class="illustrations">
+      <img src="https://illustrations.popsy.co/gray/error.svg" alt="Error Illustration 1" />
+      <img src="https://illustrations.popsy.co/gray/lost.svg" alt="Error Illustration 2" />
+    </div>
+  </div>
 </body>
-
 </html>

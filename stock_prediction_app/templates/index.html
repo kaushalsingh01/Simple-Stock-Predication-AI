@@ -1,42 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8" />
     <title>Stock Price Predictor</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+        }
+        .big-container{
+            background-image: url("{{ url_for('static', filename='img/background.jpg') }}");
+            background-attachment: fixed;
+            background-size: contain;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: #1d3557;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        select,
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 4px rgba(52, 152, 219, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 20px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Stock Price Predictor</h1>
-        <form action="/predict" method="post">
-            <div class="form-group">
-                <label for="stock">Select Stock:</label>
-                <select id="stock" name="stock" required>
-                    {% for stock in stocks %}
-                    <option value="{{ stock }}">{{ stock }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+    <div class="big-container">
+        <div class="container">
+            <h1>Stock Price Predictor</h1>
+            <form action="/predict" method="post">
+                <div class="form-group">
+                    <label for="stock">Select Stock</label>
+                    <select id="stock" name="stock" required>
+                        {% for stock in stocks %}
+                        <option value="{{ stock }}">{{ stock }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label for="current_price">Current Price ($):</label>
-                <input type="number" step="0.01" id="current_price" name="current_price" required>
-            </div>
+                <div class="form-group">
+                    <label for="current_price">Current Price ($)</label>
+                    <input type="number" step="0.01" id="current_price" name="current_price" required />
+                </div>
 
-            <div class="form-group">
-                <label for="ma10">10-Day Moving Average ($):</label>
-                <input type="number" step="0.01" id="ma10" name="ma10" required>
-            </div>
+                <div class="form-group">
+                    <label for="ma10">10-Day Moving Average ($)</label>
+                    <input type="number" step="0.01" id="ma10" name="ma10" required />
+                </div>
 
-            <div class="form-group">
-                <label for="ma50">50-Day Moving Average ($):</label>
-                <input type="number" step="0.01" id="ma50" name="ma50" required>
-            </div>
+                <div class="form-group">
+                    <label for="ma50">50-Day Moving Average ($)</label>
+                    <input type="number" step="0.01" id="ma50" name="ma50" required />
+                </div>
 
-            <button type="submit">Predict Next Day Price</button>
-        </form>
+                <button type="submit">Predict Next Day Price</button>
+            </form>
+            <button id="home_screen">Home Screen</button>
+        </div>
     </div>
+
 </body>
+<script>
+    document.getElementById('home_screen').addEventListener('click',function(e){
+        document.location.href = '/';
+    })
+</script>
 
 </html>
