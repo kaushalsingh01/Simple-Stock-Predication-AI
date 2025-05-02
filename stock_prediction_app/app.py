@@ -10,6 +10,7 @@ import plotly.offline as pyo
 import plotly.utils as plotly_utils
 import json
 import pytz
+
 app = Flask(__name__)
 
 # Configure the models directory
@@ -293,8 +294,6 @@ def predict_form():
     """Simplified prediction form with automatic data fetching"""
     return render_template('predict_form.html', available_stocks=available_stocks)
 
-
-
 @app.route('/predict', methods=['POST'])
 def predict():
     """Handle prediction with automatic data fetching"""
@@ -352,82 +351,7 @@ def predict():
                             predicted_price=round(predicted_price, 2),
                             predicted_change=round(predicted_change, 2),
                             predicted_pct_change=round(predicted_pct_change, 2),
-                            prediction_date=next_day.strftime('%Y-%m-%d'),
-                            quantity=quantity,
-                            current_value=round(current_value, 2),
-                            predicted_value=round(predicted_value, 2),
-                            value_change=round(value_change, 2),
-                            graph_json=graph_json)
-        
-    except Exception as e:
-        return render_template('error.html',
-                            message=f"Prediction failed: {str(e)}"), 500
-
-@app.route('/predict_form')
-def predict_form():
-    """Simplified prediction form with automatic data fetching"""
-    return render_template('predict_form.html', available_stocks=available_stocks)
-
-
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    """Handle prediction with automatic data fetching"""
-    stock_name = request.form['stock_name']
-    quantity = int(request.form.get('quantity', 1))
-    
-    if stock_name not in stock_models:
-        return render_template('error.html',
-                            message=f"No model loaded for {stock_name}"), 404
-    
-    ticker = STOCK_DATA[stock_name]['ticker']
-    
-    # Fetch current stock data
-    stock_data = get_current_stock_data(ticker)
-    if not stock_data:
-        return render_template('error.html',
-                            message=f"Could not fetch current data for {stock_name}"), 400
-    
-    # Prepare input features as numpy array (without feature names)
-    features = np.array([
-        [float(stock_data['current_price']),
-         float(stock_data['ma10']),
-         float(stock_data['ma50'])]
-    ])
-    
-    # Make prediction
-    try:
-        predicted_price = stock_models[stock_name].predict(features)[0]
-        predicted_change = predicted_price - float(stock_data['current_price'])
-        predicted_pct_change = (predicted_change / float(stock_data['current_price'])) * 100
-        
-        # Calculate position value
-        current_value = float(stock_data['current_price']) * quantity
-        predicted_value = predicted_price * quantity
-        value_change = predicted_value - current_value
-        
-        # Generate prediction date (next business day)
-        today = datetime.now()
-        next_day = today + timedelta(days=1)
-        if next_day.weekday() >= 5:  # If Saturday or Sunday
-            next_day += timedelta(days=(7 - next_day.weekday()))
-        
-        # Create price graph
-        graph_json = create_price_graph(stock_name, ticker, 
-                                      float(stock_data['current_price']), 
-                                      predicted_price)
-        
-        return render_template('prediction_results.html',
-                            stock_name=stock_name,
-                            ticker=ticker,
-                            current_price=round(float(stock_data['current_price']), 2),
-                            ma10=round(float(stock_data['ma10']), 2),
-                            ma50=round(float(stock_data['ma50']), 2),
-                            last_updated=stock_data['last_updated'],
-                            predicted_price=round(predicted_price, 2),
-                            predicted_change=round(predicted_change, 2),
-                            predicted_pct_change=round(predicted_pct_change, 2),
-                            prediction_date=next_day.strftime('%Y-%m-%d'),
+                            prediction_date=get_prediction_date(),
                             quantity=quantity,
                             current_value=round(current_value, 2),
                             predicted_value=round(predicted_value, 2),
