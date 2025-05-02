@@ -67,8 +67,11 @@
             border-color: #3498db;
             box-shadow: 0 0 4px rgba(52, 152, 219, 0.2);
         }
-
-        button {
+        a{
+            text-decoration: none;
+            color: #fff;
+        }
+        button{
             width: 100%;
             padding: 12px;
             background-color: #3498db;
@@ -122,9 +125,14 @@
 
                 <button type="submit" class="btn btn-primary">Predict Tomorrow's Price</button>
             </form>
-            <button id="home_screen">Home Screen</button>
+            <button id="return_home" type="submit">Home Screen</button>
         </div>
     </div>
+    <script>
+        document.getElementById('return_home').addEventListener('click', function (e) {
+            document.location.href = '/';
+        })
+    </script>
 </body>
 
 </html>
